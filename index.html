@@ -4,12 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Day in a Life</title>
+
+  <!-- React -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -40,12 +49,10 @@
 
     #root { min-height: 100vh; }
 
-    /* Scrollbar */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-    /* Animations */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
@@ -53,11 +60,6 @@
     @keyframes pulse {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.05); }
-    }
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-4px); }
-      40%, 80% { transform: translateX(4px); }
     }
     @keyframes pop {
       0% { transform: scale(0.8); opacity: 0; }
@@ -89,10 +91,13 @@
       50% { transform: scale(1.3); }
       100% { transform: scale(1); }
     }
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
 
     .fade-up { animation: fadeUp 0.4s ease both; }
 
-    /* Layout */
     .app {
       max-width: 430px;
       margin: 0 auto;
@@ -102,45 +107,165 @@
       position: relative;
     }
 
-    /* Header */
+    /* ── Login Screen ── */
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      text-align: center;
+      background: radial-gradient(ellipse at top, #1a0a2e 0%, #0a0a0f 60%);
+    }
+    .login-logo { font-size: 72px; margin-bottom: 24px; animation: firePulse 2s ease infinite; }
+    .login-title {
+      font-size: 32px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #a855f7, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .login-sub { font-size: 15px; color: var(--text2); margin-bottom: 12px; line-height: 1.5; }
+    .login-features {
+      list-style: none;
+      margin-bottom: 40px;
+      text-align: left;
+      width: 100%;
+      max-width: 280px;
+    }
+    .login-features li {
+      font-size: 14px;
+      color: var(--text2);
+      padding: 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .login-features li span:first-child { font-size: 18px; }
+    .google-btn {
+      width: 100%;
+      max-width: 320px;
+      padding: 16px 24px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: all 0.2s;
+    }
+    .google-btn:hover { background: var(--surface2); border-color: var(--accent); }
+    .google-btn:active { transform: scale(0.97); }
+    .google-icon { font-size: 20px; }
+    .login-note { font-size: 11px; color: var(--text2); margin-top: 16px; opacity: 0.6; }
+
+    /* ── Loading ── */
+    .loading-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .loading-spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--surface2);
+      border-top-color: var(--accent2);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .loading-text { font-size: 14px; color: var(--text2); }
+
+    /* ── Header ── */
     .header {
-      padding: 20px 20px 0;
+      padding: 16px 16px 0;
       background: var(--bg);
       position: sticky;
       top: 0;
       z-index: 10;
     }
 
-    /* Streak Banner */
+    .user-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .user-info { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      object-fit: cover;
+    }
+    .user-avatar-fallback {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--accent2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .user-name { font-size: 13px; font-weight: 600; }
+    .sync-indicator {
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .sync-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+    .sync-dot.syncing { background: var(--gold); animation: pulse 1s ease infinite; }
+    .sync-dot.error { background: var(--red); }
+    .sync-text { color: var(--text2); }
+    .logout-btn {
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--text2);
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── Streak Banner ── */
     .streak-banner {
       background: linear-gradient(135deg, #1a0a2e 0%, #16213e 50%, #0f3460 100%);
       border: 1px solid rgba(124,58,237,0.4);
       border-radius: 20px;
-      padding: 16px 20px;
+      padding: 14px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       position: relative;
       overflow: hidden;
       animation: glow 3s ease infinite;
     }
-    .streak-banner::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(124,58,237,0.05), transparent);
-      animation: spin 4s linear infinite;
-    }
     .streak-left { display: flex; align-items: center; gap: 12px; }
-    .streak-fire {
-      font-size: 36px;
-      animation: firePulse 2s ease infinite;
-      display: block;
-      line-height: 1;
-    }
+    .streak-fire { font-size: 34px; animation: firePulse 2s ease infinite; display: block; line-height: 1; }
     .streak-count {
-      font-size: 32px;
+      font-size: 30px;
       font-weight: 900;
       background: linear-gradient(135deg, #f59e0b, #ef4444);
       -webkit-background-clip: text;
@@ -148,12 +273,12 @@
       background-clip: text;
       line-height: 1;
     }
-    .streak-label { font-size: 11px; color: var(--text2); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+    .streak-label { font-size: 10px; color: var(--text2); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
     .streak-right { text-align: right; }
     .streak-best { font-size: 11px; color: var(--text2); }
     .streak-best span { color: var(--gold); font-weight: 700; }
     .xp-badge {
-      margin-top: 6px;
+      margin-top: 5px;
       background: rgba(124,58,237,0.2);
       border: 1px solid rgba(124,58,237,0.4);
       border-radius: 12px;
@@ -163,49 +288,34 @@
       color: var(--accent2);
     }
 
-    /* Progress Ring */
+    /* ── Progress Ring ── */
     .progress-section {
       display: flex;
       align-items: center;
       gap: 16px;
-      padding: 0 20px 16px;
+      padding: 0 16px 12px;
     }
     .progress-ring-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
     .progress-ring-wrap svg { transform: rotate(-90deg); }
     .progress-ring-bg { fill: none; stroke: var(--surface2); stroke-width: 6; }
     .progress-ring-fill {
-      fill: none;
-      stroke-width: 6;
-      stroke-linecap: round;
+      fill: none; stroke-width: 6; stroke-linecap: round;
       stroke: url(#progressGrad);
       transition: stroke-dashoffset 0.6s ease;
     }
     .progress-center {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
     }
     .progress-pct { font-size: 16px; font-weight: 800; color: var(--text); }
     .progress-done { font-size: 9px; color: var(--text2); font-weight: 600; }
     .progress-info { flex: 1; }
-    .progress-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
-    .progress-subtitle { font-size: 13px; color: var(--text2); line-height: 1.4; }
+    .progress-title { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+    .progress-subtitle { font-size: 12px; color: var(--text2); line-height: 1.4; }
     .motivational-msg { font-size: 12px; color: var(--accent2); font-style: italic; margin-top: 4px; font-weight: 500; }
 
-    /* Date Tabs */
-    .date-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px 12px;
-    }
-    .date-text { font-size: 13px; color: var(--text2); font-weight: 500; }
-    .date-text span { color: var(--text); font-weight: 700; }
-
-    /* Bottom Nav */
+    /* ── Bottom Nav ── */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -238,10 +348,10 @@
     .nav-icon { font-size: 22px; }
     .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; }
 
-    /* Main content */
+    /* ── Main ── */
     .main { flex: 1; padding: 0 16px 90px; overflow-y: auto; }
 
-    /* Task List */
+    /* ── Task Card ── */
     .task-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -259,10 +369,7 @@
       -webkit-tap-highlight-color: transparent;
     }
     .task-card:active { transform: scale(0.98); }
-    .task-card.done {
-      border-color: rgba(16,185,129,0.3);
-      background: rgba(16,185,129,0.05);
-    }
+    .task-card.done { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.05); }
     .task-card.done::before {
       content: '';
       position: absolute;
@@ -273,183 +380,101 @@
     }
     .task-emoji { font-size: 28px; flex-shrink: 0; line-height: 1; }
     .task-info { flex: 1; min-width: 0; }
-    .task-name {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 2px;
-    }
-    .task-card.done .task-name {
-      color: var(--text2);
-      text-decoration: line-through;
-    }
+    .task-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .task-card.done .task-name { color: var(--text2); text-decoration: line-through; }
     .task-desc { font-size: 12px; color: var(--text2); line-height: 1.3; }
     .task-xp {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--accent2);
+      font-size: 11px; font-weight: 700; color: var(--accent2);
       background: rgba(124,58,237,0.15);
       border: 1px solid rgba(124,58,237,0.3);
-      border-radius: 8px;
-      padding: 2px 8px;
-      flex-shrink: 0;
+      border-radius: 8px; padding: 2px 8px; flex-shrink: 0;
     }
     .task-check {
-      width: 28px;
-      height: 28px;
+      width: 28px; height: 28px;
       border-radius: 50%;
       border: 2px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
       transition: all 0.3s ease;
       font-size: 16px;
     }
     .task-card.done .task-check {
-      background: var(--green);
-      border-color: var(--green);
+      background: var(--green); border-color: var(--green);
       animation: checkBounce 0.4s ease;
     }
-    .task-order {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--text2);
-      min-width: 18px;
-      text-align: center;
-      opacity: 0.5;
-    }
-    .task-card.done .task-order { opacity: 0; }
 
-    /* Section Label */
     .section-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text2);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      font-size: 11px; font-weight: 700; color: var(--text2);
+      letter-spacing: 0.1em; text-transform: uppercase;
       padding: 8px 4px 6px;
     }
 
-    /* Reward pop */
+    /* ── Toast ── */
     .reward-toast {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-      padding: 10px 20px;
-      border-radius: 50px;
-      font-size: 14px;
-      font-weight: 700;
-      z-index: 999;
+      color: white; padding: 10px 20px; border-radius: 50px;
+      font-size: 14px; font-weight: 700; z-index: 999;
       animation: slideIn 0.3s ease;
       box-shadow: 0 8px 32px rgba(124,58,237,0.5);
+      white-space: nowrap;
     }
 
-    /* Confetti */
+    /* ── Confetti ── */
     .confetti-piece {
-      position: fixed;
-      width: 10px;
-      height: 10px;
-      border-radius: 2px;
+      position: fixed; width: 10px; height: 10px; border-radius: 2px;
       animation: confetti-fall linear forwards;
-      pointer-events: none;
-      z-index: 998;
+      pointer-events: none; z-index: 998;
     }
 
-    /* ---- STATS PAGE ---- */
-    .stats-page { padding: 16px 0; }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
+    /* ── Stats ── */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
-      text-align: center;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px; text-align: center;
       animation: fadeUp 0.4s ease both;
     }
     .stat-icon { font-size: 28px; margin-bottom: 8px; }
-    .stat-value { font-size: 28px; font-weight: 900; background: linear-gradient(135deg, var(--accent2), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-value {
+      font-size: 28px; font-weight: 900;
+      background: linear-gradient(135deg, var(--accent2), var(--blue));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
     .stat-label { font-size: 11px; color: var(--text2); font-weight: 600; margin-top: 2px; }
 
-    /* Heatmap */
     .heatmap-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px; margin-bottom: 16px;
       animation: fadeUp 0.5s ease both;
     }
-    .heatmap-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+    .heatmap-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
     .heatmap-subtitle { font-size: 11px; color: var(--text2); margin-bottom: 12px; }
-    .heatmap-grid {
-      display: flex;
-      gap: 3px;
-      flex-wrap: wrap;
-    }
-    .heatmap-cell {
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      transition: transform 0.2s;
-    }
+    .heatmap-grid { display: flex; gap: 3px; flex-wrap: wrap; }
+    .heatmap-cell { width: 14px; height: 14px; border-radius: 3px; transition: transform 0.2s; }
     .heatmap-cell:hover { transform: scale(1.3); }
     .heatmap-legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
     .heatmap-legend span { font-size: 10px; color: var(--text2); }
 
-    /* Period tabs */
     .period-tabs {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 16px;
-      overflow-x: auto;
-      padding-bottom: 2px;
+      display: flex; gap: 6px; margin-bottom: 16px;
+      overflow-x: auto; padding-bottom: 2px;
     }
     .period-tab {
-      flex-shrink: 0;
-      padding: 6px 16px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text2);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-family: inherit;
+      flex-shrink: 0; padding: 6px 16px; border-radius: 20px;
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text2); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
     }
-    .period-tab.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: white;
-    }
+    .period-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
 
-    /* Achievements */
     .achievements-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 16px;
-      animation: fadeUp 0.6s ease both;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px; margin-bottom: 16px;
     }
     .achievement-list { display: flex; flex-direction: column; gap: 10px; }
     .achievement-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px;
-      border-radius: 12px;
-      background: var(--surface2);
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px; border-radius: 12px; background: var(--surface2);
     }
     .achievement-item.locked { opacity: 0.4; filter: grayscale(1); }
     .ach-icon { font-size: 24px; }
@@ -457,144 +482,72 @@
     .ach-name { font-size: 13px; font-weight: 700; }
     .ach-desc { font-size: 11px; color: var(--text2); margin-top: 1px; }
     .ach-badge {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 8px;
-      background: rgba(245,158,11,0.2);
-      color: var(--gold);
-      border: 1px solid rgba(245,158,11,0.3);
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 8px;
+      background: rgba(245,158,11,0.2); color: var(--gold); border: 1px solid rgba(245,158,11,0.3);
     }
 
-    /* Share page */
+    /* ── Share ── */
     .share-page { padding: 16px 0; }
-    .share-preview {
-      border-radius: 20px;
-      overflow: hidden;
-      margin-bottom: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
+    .share-preview { border-radius: 20px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
     .share-canvas { width: 100%; display: block; border-radius: 20px; }
     .share-btn {
-      width: 100%;
-      padding: 16px;
-      border-radius: 16px;
-      border: none;
+      width: 100%; padding: 16px; border-radius: 16px; border: none;
       background: linear-gradient(135deg, #e1306c, #f77737);
-      color: white;
-      font-size: 16px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 10px;
-      transition: transform 0.2s, opacity 0.2s;
+      color: white; font-size: 16px; font-weight: 700; font-family: inherit;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 10px; margin-bottom: 10px; transition: transform 0.2s, opacity 0.2s;
     }
     .share-btn:active { transform: scale(0.97); opacity: 0.9; }
-    .share-btn.secondary {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
+    .share-btn.secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
     .share-tip { font-size: 12px; color: var(--text2); text-align: center; margin-top: 8px; }
 
-    /* Completion screen */
+    /* ── Completion ── */
     .completion-screen {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: rgba(10,10,15,0.95);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-      animation: fadeUp 0.4s ease;
-      text-align: center;
-      padding: 32px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 200; animation: fadeUp 0.4s ease;
+      text-align: center; padding: 32px;
     }
     .completion-emoji { font-size: 80px; animation: pop 0.6s ease; margin-bottom: 16px; }
-    .completion-title { font-size: 28px; font-weight: 900; margin-bottom: 8px; background: linear-gradient(135deg, var(--gold), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .completion-title {
+      font-size: 28px; font-weight: 900; margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--gold), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
     .completion-sub { font-size: 15px; color: var(--text2); margin-bottom: 24px; line-height: 1.5; }
     .completion-btn {
-      padding: 14px 32px;
-      border-radius: 50px;
-      border: none;
+      padding: 14px 32px; border-radius: 50px; border: none;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-      font-size: 16px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
+      color: white; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer;
     }
 
-    /* Level badge */
     .level-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      display: inline-flex; align-items: center; gap: 6px;
       background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.15));
       border: 1px solid rgba(245,158,11,0.3);
-      border-radius: 20px;
-      padding: 4px 12px;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--gold);
-      margin-top: 8px;
+      border-radius: 20px; padding: 4px 12px;
+      font-size: 12px; font-weight: 700; color: var(--gold);
     }
 
-    /* Progress bar */
-    .daily-progress-bar {
-      height: 4px;
-      background: var(--surface2);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
+    .daily-progress-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
     .daily-progress-fill {
       height: 100%;
       background: linear-gradient(90deg, var(--accent), var(--accent2), var(--pink));
-      border-radius: 2px;
-      transition: width 0.6s ease;
+      border-radius: 2px; transition: width 0.6s ease;
     }
 
-    /* Weekly summary */
-    .week-dots {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-    }
-    .week-dot {
-      flex: 1;
-      height: 8px;
-      border-radius: 4px;
-      transition: all 0.3s;
-    }
-
-    .chart-bars {
-      display: flex;
-      align-items: flex-end;
-      gap: 4px;
-      height: 80px;
-      margin-top: 8px;
-    }
+    .chart-bars { display: flex; align-items: flex-end; gap: 4px; height: 80px; margin-top: 8px; }
     .chart-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .chart-bar {
-      width: 100%;
-      border-radius: 4px 4px 0 0;
+      width: 100%; border-radius: 4px 4px 0 0;
       background: linear-gradient(180deg, var(--accent2), var(--accent));
-      transition: height 0.6s ease;
-      min-height: 2px;
+      transition: height 0.6s ease; min-height: 2px;
     }
     .chart-bar-label { font-size: 9px; color: var(--text2); }
 
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text2);
-    }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
     .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
     .empty-state p { font-size: 14px; line-height: 1.5; }
   </style>
@@ -602,25 +555,31 @@
 <body>
 <div id="root"></div>
 
-<script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
+<!-- Firebase config loaded from firebase-config.js (gitignored) -->
+<script src="firebase-config.js"></script>
+<script>
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+</script>
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const TASKS = [
-  { id: 0, emoji: "🥑", name: "Fat First Morning", desc: "Start with healthy fats — avocado, nuts, or eggs", xp: 10, time: "Morning" },
-  { id: 1, emoji: "🥚", name: "Protein Rich Breakfast", desc: "High protein fuel to kickstart the day right", xp: 10, time: "Morning" },
-  { id: 2, emoji: "👟", name: "2K Steps", desc: "Morning walk to wake up the body", xp: 10, time: "Morning" },
-  { id: 3, emoji: "📚", name: "Interview Prep", desc: "30 min of study — DSA, system design, or behaviorals", xp: 15, time: "Morning" },
-  { id: 4, emoji: "🥗", name: "Protein & Fiber Lunch", desc: "Balanced lunch — lean protein + greens + legumes", xp: 10, time: "Afternoon" },
-  { id: 5, emoji: "🚶", name: "3K Steps", desc: "Post-lunch walk to aid digestion", xp: 10, time: "Afternoon" },
-  { id: 6, emoji: "🍎", name: "Mindful Snack", desc: "Smart pre-workout fuel — fruit, nuts, or protein bar", xp: 10, time: "Afternoon" },
-  { id: 7, emoji: "💪", name: "Gym / 8K Steps", desc: "Main workout — strength, cardio, or long walk", xp: 20, time: "Evening" },
-  { id: 8, emoji: "🌙", name: "Low Carb Dinner", desc: "Wind down right — protein + veggies, skip the carbs", xp: 10, time: "Evening" },
-  { id: 9, emoji: "🧠", name: "Evening Interview Prep", desc: "Lock in the knowledge — review notes or mock interview", xp: 15, time: "Evening" },
+  { id: 0, emoji: "🥑", name: "Fat First Morning",       desc: "Start with healthy fats — avocado, nuts, or eggs",          xp: 10, time: "Morning"   },
+  { id: 1, emoji: "🥚", name: "Protein Rich Breakfast",  desc: "High protein fuel to kickstart the day right",               xp: 10, time: "Morning"   },
+  { id: 2, emoji: "👟", name: "2K Steps",                desc: "Morning walk to wake up the body",                           xp: 10, time: "Morning"   },
+  { id: 3, emoji: "📚", name: "Interview Prep",          desc: "30 min of study — DSA, system design, or behaviorals",       xp: 15, time: "Morning"   },
+  { id: 4, emoji: "🥗", name: "Protein & Fiber Lunch",   desc: "Balanced lunch — lean protein + greens + legumes",           xp: 10, time: "Afternoon" },
+  { id: 5, emoji: "🚶", name: "3K Steps",                desc: "Post-lunch walk to aid digestion",                           xp: 10, time: "Afternoon" },
+  { id: 6, emoji: "🍎", name: "Mindful Snack",           desc: "Smart pre-workout fuel — fruit, nuts, or protein bar",       xp: 10, time: "Afternoon" },
+  { id: 7, emoji: "💪", name: "Gym / 8K Steps",          desc: "Main workout — strength, cardio, or long walk",              xp: 20, time: "Evening"   },
+  { id: 8, emoji: "🌙", name: "Low Carb Dinner",         desc: "Wind down right — protein + veggies, skip the carbs",        xp: 10, time: "Evening"   },
+  { id: 9, emoji: "🧠", name: "Evening Interview Prep",  desc: "Lock in the knowledge — review notes or mock interview",     xp: 15, time: "Evening"   },
 ];
-
-const TOTAL_XP = TASKS.reduce((s, t) => s + t.xp, 0) + 50; // 50 bonus for full day
 
 const MOTIVATIONAL = [
   "You're building the best version of yourself 🚀",
@@ -634,19 +593,13 @@ const MOTIVATIONAL = [
 ];
 
 const ACHIEVEMENTS = [
-  { id: "first_day", icon: "🌟", name: "First Step", desc: "Complete your first full day", threshold: 1 },
-  { id: "week", icon: "🔥", name: "Week Warrior", desc: "7-day streak", threshold: 7 },
-  { id: "fortnight", icon: "⚡", name: "On Fire", desc: "14-day streak", threshold: 14 },
-  { id: "month", icon: "🏆", name: "Monthly Master", desc: "30-day streak", threshold: 30 },
-  { id: "century", icon: "💎", name: "Diamond Mind", desc: "100-day streak", threshold: 100 },
-  { id: "year", icon: "👑", name: "Year of Champions", desc: "365-day streak", threshold: 365 },
+  { id: "first_day",  icon: "🌟", name: "First Step",         desc: "Complete your first full day",  threshold: 1   },
+  { id: "week",       icon: "🔥", name: "Week Warrior",       desc: "7-day streak",                  threshold: 7   },
+  { id: "fortnight",  icon: "⚡", name: "On Fire",            desc: "14-day streak",                 threshold: 14  },
+  { id: "month",      icon: "🏆", name: "Monthly Master",     desc: "30-day streak",                 threshold: 30  },
+  { id: "century",    icon: "💎", name: "Diamond Mind",       desc: "100-day streak",                threshold: 100 },
+  { id: "year",       icon: "👑", name: "Year of Champions",  desc: "365-day streak",                threshold: 365 },
 ];
-
-const COLORS = {
-  0: "#ef4444", 1: "#f97316", 2: "#eab308", 3: "#22c55e",
-  4: "#06b6d4", 5: "#3b82f6", 6: "#8b5cf6", 7: "#ec4899",
-  8: "#14b8a6", 9: "#f59e0b",
-};
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 
@@ -661,39 +614,29 @@ function formatDate(d) {
 
 function getLevel(xp) {
   const levels = [
-    { min: 0, name: "Seedling 🌱", max: 100 },
-    { min: 100, name: "Sprout 🪴", max: 300 },
-    { min: 300, name: "Hustler 💥", max: 600 },
-    { min: 600, name: "Warrior ⚔️", max: 1000 },
-    { min: 1000, name: "Champion 🏆", max: 2000 },
-    { min: 2000, name: "Legend 👑", max: Infinity },
+    { min: 0,    name: "Seedling 🌱" },
+    { min: 100,  name: "Sprout 🪴"   },
+    { min: 300,  name: "Hustler 💥"  },
+    { min: 600,  name: "Warrior ⚔️"  },
+    { min: 1000, name: "Champion 🏆" },
+    { min: 2000, name: "Legend 👑"   },
   ];
-  return levels.find(l => xp >= l.min && xp < l.max) || levels[levels.length - 1];
-}
-
-function loadData() {
-  try { return JSON.parse(localStorage.getItem('daytracker_v2') || '{}'); } catch { return {}; }
-}
-function saveData(data) {
-  localStorage.setItem('daytracker_v2', JSON.stringify(data));
+  return [...levels].reverse().find(l => xp >= l.min) || levels[0];
 }
 
 function calcStreak(history) {
-  const days = Object.keys(history).sort().reverse();
-  let streak = 0;
   const today = todayKey();
+  let streak = 0;
   let check = today;
-  for (let i = 0; i < days.length; i++) {
-    if (days[i] === check || (i === 0 && days[i] === today)) {
-      const day = history[days[i]];
-      const completed = (day.tasks || []).filter(Boolean).length;
-      if (completed >= TASKS.length) {
-        streak++;
-        const d = new Date(check + 'T00:00:00');
-        d.setDate(d.getDate() - 1);
-        check = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      } else break;
-    } else break;
+  while (true) {
+    const day = history[check];
+    if (!day) break;
+    const completed = (day.tasks || []).filter(Boolean).length;
+    if (completed < TASKS.length) break;
+    streak++;
+    const d = new Date(check + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    check = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
   return streak;
 }
@@ -702,14 +645,11 @@ function calcLongestStreak(history) {
   const days = Object.keys(history).sort();
   let max = 0, cur = 0, prev = null;
   for (const d of days) {
-    const day = history[d];
-    const completed = (day.tasks || []).filter(Boolean).length >= TASKS.length;
-    if (completed) {
+    const done = (history[d].tasks || []).filter(Boolean).length >= TASKS.length;
+    if (done) {
       if (prev) {
-        const dt1 = new Date(prev + 'T00:00:00'), dt2 = new Date(d + 'T00:00:00');
-        const diff = (dt2 - dt1) / 86400000;
-        if (diff === 1) cur++;
-        else cur = 1;
+        const diff = (new Date(d + 'T00:00:00') - new Date(prev + 'T00:00:00')) / 86400000;
+        cur = diff === 1 ? cur + 1 : 1;
       } else cur = 1;
       max = Math.max(max, cur);
       prev = d;
@@ -718,7 +658,22 @@ function calcLongestStreak(history) {
   return max;
 }
 
-// ─── Confetti ─────────────────────────────────────────────────────────────────
+// ─── Firebase sync ────────────────────────────────────────────────────────────
+
+function userDoc(uid) {
+  return db.collection('users').doc(uid).collection('data').doc('tracker');
+}
+
+async function loadFromFirestore(uid) {
+  const snap = await userDoc(uid).get();
+  return snap.exists ? (snap.data().history || {}) : {};
+}
+
+async function saveToFirestore(uid, history) {
+  await userDoc(uid).set({ history }, { merge: true });
+}
+
+// ─── Components ───────────────────────────────────────────────────────────────
 
 function Confetti() {
   const pieces = Array.from({ length: 40 }, (_, i) => ({
@@ -733,19 +688,13 @@ function Confetti() {
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 998 }}>
       {pieces.map(p => (
         <div key={p.id} className="confetti-piece" style={{
-          left: `${p.x}%`,
-          width: p.size,
-          height: p.size,
-          background: p.color,
-          animationDuration: `${p.duration}s`,
-          animationDelay: `${p.delay}s`,
+          left: `${p.x}%`, width: p.size, height: p.size, background: p.color,
+          animationDuration: `${p.duration}s`, animationDelay: `${p.delay}s`,
         }} />
       ))}
     </div>
   );
 }
-
-// ─── Progress Ring ─────────────────────────────────────────────────────────────
 
 function ProgressRing({ pct }) {
   const r = 34, circ = 2 * Math.PI * r;
@@ -771,15 +720,11 @@ function ProgressRing({ pct }) {
   );
 }
 
-// ─── Task Card ────────────────────────────────────────────────────────────────
-
 function TaskCard({ task, done, onToggle, delay }) {
   return (
-    <div
-      className={`task-card${done ? ' done' : ''}`}
+    <div className={`task-card${done ? ' done' : ''}`}
       style={{ animationDelay: `${delay * 0.06}s` }}
-      onClick={() => onToggle(task.id)}
-    >
+      onClick={() => onToggle(task.id)}>
       <div className="task-emoji">{task.emoji}</div>
       <div className="task-info">
         <div className="task-name">{task.name}</div>
@@ -791,29 +736,19 @@ function TaskCard({ task, done, onToggle, delay }) {
   );
 }
 
-// ─── Heatmap ──────────────────────────────────────────────────────────────────
-
 function Heatmap({ history, days }) {
   const today = todayKey();
   const cells = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    const day = history[key];
-    const completed = day ? (day.tasks||[]).filter(Boolean).length : 0;
+    const completed = (history[key]?.tasks || []).filter(Boolean).length;
     const pct = completed / TASKS.length;
-    let color;
-    if (completed === 0) color = '#1c1c27';
-    else if (pct < 0.3) color = '#2d1b69';
-    else if (pct < 0.6) color = '#5b21b6';
-    else if (pct < 1) color = '#7c3aed';
-    else color = '#10b981';
-    const isToday = key === today;
+    const color = completed === 0 ? '#1c1c27' : pct < 0.3 ? '#2d1b69' : pct < 0.6 ? '#5b21b6' : pct < 1 ? '#7c3aed' : '#10b981';
     cells.push(
       <div key={key} className="heatmap-cell"
-        title={`${key}: ${completed}/${TASKS.length} tasks`}
-        style={{ background: color, border: isToday ? '2px solid #a855f7' : 'none' }}
-      />
+        title={`${key}: ${completed}/${TASKS.length}`}
+        style={{ background: color, border: key === today ? '2px solid #a855f7' : 'none' }} />
     );
   }
   return (
@@ -830,20 +765,23 @@ function Heatmap({ history, days }) {
   );
 }
 
-// ─── Share Card Generator ──────────────────────────────────────────────────────
-
-function SharePage({ history, streak }) {
+function SharePage({ history, streak, user }) {
   const canvasRef = useRef(null);
   const today = todayKey();
-  const day = history[today] || { tasks: [] };
-  const tasks = day.tasks || [];
+  const tasks = history[today]?.tasks || [];
   const completed = tasks.filter(Boolean).length;
   const totalXP = Object.values(history).reduce((s, d) => s + (d.xp || 0), 0);
   const level = getLevel(totalXP);
 
-  useEffect(() => {
-    drawCard();
-  }, [history, streak]);
+  useEffect(() => { drawCard(); }, [history, streak]);
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+  }
 
   function drawCard() {
     const canvas = canvasRef.current;
@@ -852,160 +790,87 @@ function SharePage({ history, streak }) {
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // Background gradient
-    const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, '#0a0a0f');
-    bg.addColorStop(0.5, '#0d0a1a');
-    bg.addColorStop(1, '#050510');
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
+    const bg = ctx.createLinearGradient(0,0,W,H);
+    bg.addColorStop(0,'#0a0a0f'); bg.addColorStop(0.5,'#0d0a1a'); bg.addColorStop(1,'#050510');
+    ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
 
-    // Decorative circles
-    ctx.save();
-    ctx.globalAlpha = 0.08;
-    const g1 = ctx.createRadialGradient(200, 200, 0, 200, 200, 400);
-    g1.addColorStop(0, '#7c3aed'); g1.addColorStop(1, 'transparent');
-    ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
-    const g2 = ctx.createRadialGradient(900, 900, 0, 900, 900, 500);
-    g2.addColorStop(0, '#ec4899'); g2.addColorStop(1, 'transparent');
-    ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalAlpha = 0.08;
+    const g1 = ctx.createRadialGradient(200,200,0,200,200,400);
+    g1.addColorStop(0,'#7c3aed'); g1.addColorStop(1,'transparent');
+    ctx.fillStyle = g1; ctx.fillRect(0,0,W,H);
+    const g2 = ctx.createRadialGradient(900,900,0,900,900,500);
+    g2.addColorStop(0,'#ec4899'); g2.addColorStop(1,'transparent');
+    ctx.fillStyle = g2; ctx.fillRect(0,0,W,H);
     ctx.restore();
 
-    // Top badge
-    ctx.save();
+    // Badge
     ctx.fillStyle = 'rgba(124,58,237,0.2)';
-    roundRect(ctx, W/2 - 140, 60, 280, 60, 30);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(168,85,247,0.5)';
-    ctx.lineWidth = 2;
-    roundRect(ctx, W/2 - 140, 60, 280, 60, 30);
-    ctx.stroke();
-    ctx.restore();
-    ctx.font = 'bold 22px Inter, sans-serif';
-    ctx.fillStyle = '#a855f7';
-    ctx.textAlign = 'center';
-    ctx.fillText('DAY IN A LIFE', W/2, 97);
+    roundRect(ctx, W/2-140, 60, 280, 60, 30); ctx.fill();
+    ctx.strokeStyle = 'rgba(168,85,247,0.5)'; ctx.lineWidth = 2;
+    roundRect(ctx, W/2-140, 60, 280, 60, 30); ctx.stroke();
+    ctx.font = 'bold 22px sans-serif'; ctx.fillStyle = '#a855f7';
+    ctx.textAlign = 'center'; ctx.fillText('DAY IN A LIFE', W/2, 97);
 
-    // Date
-    ctx.font = '22px Inter, sans-serif';
-    ctx.fillStyle = '#6666aa';
-    ctx.textAlign = 'center';
+    ctx.font = '22px sans-serif'; ctx.fillStyle = '#6666aa';
     ctx.fillText(formatDate(today), W/2, 160);
 
-    // Big streak
-    ctx.font = 'bold 90px Inter, sans-serif';
-    ctx.fillStyle = '#f59e0b';
-    ctx.textAlign = 'center';
+    ctx.font = 'bold 90px sans-serif'; ctx.fillStyle = '#f59e0b';
     ctx.fillText(`🔥 ${streak}`, W/2, 290);
-    ctx.font = 'bold 28px Inter, sans-serif';
-    ctx.fillStyle = '#8888aa';
+    ctx.font = 'bold 28px sans-serif'; ctx.fillStyle = '#8888aa';
     ctx.fillText('DAY STREAK', W/2, 340);
 
-    // Level
-    ctx.font = 'bold 22px Inter, sans-serif';
-    ctx.fillStyle = '#a855f7';
+    ctx.font = 'bold 22px sans-serif'; ctx.fillStyle = '#a855f7';
     ctx.fillText(level.name, W/2, 390);
 
-    // Progress circle
+    // Ring
     const cx = W/2, cy = 530, radius = 100;
     const pct = completed / TASKS.length;
-    ctx.save();
-    ctx.strokeStyle = '#1c1c27';
-    ctx.lineWidth = 16;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.strokeStyle = '#1c1c27'; ctx.lineWidth = 16;
+    ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.stroke();
     if (pct > 0) {
-      const grad = ctx.createLinearGradient(cx - radius, cy, cx + radius, cy);
-      grad.addColorStop(0, '#7c3aed');
-      grad.addColorStop(1, '#ec4899');
-      ctx.strokeStyle = grad;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, -Math.PI/2, -Math.PI/2 + Math.PI * 2 * pct);
-      ctx.stroke();
+      const grad = ctx.createLinearGradient(cx-radius,cy,cx+radius,cy);
+      grad.addColorStop(0,'#7c3aed'); grad.addColorStop(1,'#ec4899');
+      ctx.strokeStyle = grad; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(cx,cy,radius,-Math.PI/2,-Math.PI/2+Math.PI*2*pct); ctx.stroke();
     }
-    ctx.restore();
-    ctx.font = 'bold 56px Inter, sans-serif';
-    ctx.fillStyle = '#f0f0ff';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${completed}/${TASKS.length}`, cx, cy + 20);
-    ctx.font = '20px Inter, sans-serif';
-    ctx.fillStyle = '#6666aa';
-    ctx.fillText("today's tasks", cx, cy + 52);
+    ctx.font = 'bold 56px sans-serif'; ctx.fillStyle = '#f0f0ff';
+    ctx.fillText(`${completed}/${TASKS.length}`, cx, cy+20);
+    ctx.font = '20px sans-serif'; ctx.fillStyle = '#6666aa';
+    ctx.fillText("today's tasks", cx, cy+52);
 
-    // Task list
-    const taskY = 680;
-    const colW = 480;
+    // Task grid
+    const taskY = 680, colW = 480;
     TASKS.forEach((t, i) => {
       const col = i < 5 ? 0 : 1;
-      const row = i < 5 ? i : i - 5;
-      const x = col === 0 ? 120 : W/2 + 40;
-      const y = taskY + row * 56;
+      const row = i < 5 ? i : i-5;
+      const x = col===0 ? 120 : W/2+40, y = taskY + row*56;
       const done = tasks[i];
-      ctx.save();
       ctx.fillStyle = done ? 'rgba(16,185,129,0.15)' : 'rgba(28,28,39,0.6)';
-      roundRect(ctx, x, y, colW, 46, 12);
-      ctx.fill();
-      if (done) {
-        ctx.strokeStyle = 'rgba(16,185,129,0.4)';
-        ctx.lineWidth = 1.5;
-        roundRect(ctx, x, y, colW, 46, 12);
-        ctx.stroke();
-      }
-      ctx.restore();
-      ctx.font = '26px serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(t.emoji, x + 12, y + 32);
-      ctx.font = done ? `bold 18px Inter, sans-serif` : '18px Inter, sans-serif';
+      roundRect(ctx,x,y,colW,46,12); ctx.fill();
+      if (done) { ctx.strokeStyle='rgba(16,185,129,0.4)'; ctx.lineWidth=1.5; roundRect(ctx,x,y,colW,46,12); ctx.stroke(); }
+      ctx.font = '26px serif'; ctx.textAlign = 'left'; ctx.fillText(t.emoji, x+12, y+32);
+      ctx.font = done ? 'bold 18px sans-serif' : '18px sans-serif';
       ctx.fillStyle = done ? '#10b981' : '#6666aa';
-      ctx.fillText(t.name, x + 52, y + 31);
-      if (done) {
-        ctx.font = 'bold 20px Inter, sans-serif';
-        ctx.fillStyle = '#10b981';
-        ctx.textAlign = 'right';
-        ctx.fillText('✓', x + colW - 14, y + 32);
-      }
+      ctx.fillText(t.name, x+52, y+31);
+      if (done) { ctx.font='bold 20px sans-serif'; ctx.fillStyle='#10b981'; ctx.textAlign='right'; ctx.fillText('✓',x+colW-14,y+32); }
     });
 
-    // Footer
-    ctx.font = '20px Inter, sans-serif';
-    ctx.fillStyle = 'rgba(102,102,170,0.6)';
-    ctx.textAlign = 'center';
-    ctx.fillText('Built my best day 💜', W/2, H - 40);
-  }
-
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
+    ctx.font='20px sans-serif'; ctx.fillStyle='rgba(102,102,170,0.6)';
+    ctx.textAlign='center'; ctx.fillText('Built my best day 💜', W/2, H-40);
   }
 
   function download() {
-    const canvas = canvasRef.current;
     const link = document.createElement('a');
     link.download = `dayinalife-${today}.png`;
-    link.href = canvas.toDataURL('image/png');
+    link.href = canvasRef.current.toDataURL('image/png');
     link.click();
   }
-
   function copyToClipboard() {
-    const canvas = canvasRef.current;
-    canvas.toBlob(blob => {
+    canvasRef.current.toBlob(blob => {
       try {
-        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        alert('Image copied! Now paste it into Instagram Stories 📸');
-      } catch {
-        download();
-      }
+        navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+        alert('Copied! Paste into Instagram Stories 📸');
+      } catch { download(); }
     });
   }
 
@@ -1015,135 +880,87 @@ function SharePage({ history, streak }) {
       <div className="share-preview">
         <canvas ref={canvasRef} className="share-canvas" />
       </div>
-      <button className="share-btn" onClick={copyToClipboard}>
-        <span>📸</span> Copy for Instagram
-      </button>
-      <button className="share-btn secondary" onClick={download}>
-        <span>💾</span> Save to Camera Roll
-      </button>
-      <p className="share-tip">Download &rarr; Open Instagram &rarr; Add to Stories or Feed</p>
+      <button className="share-btn" onClick={copyToClipboard}><span>📸</span> Copy for Instagram</button>
+      <button className="share-btn secondary" onClick={download}><span>💾</span> Save Image</button>
+      <p className="share-tip">Download → Open Instagram → Add to Stories or Feed</p>
     </div>
   );
 }
 
-// ─── Stats Page ────────────────────────────────────────────────────────────────
-
 function StatsPage({ history }) {
   const [period, setPeriod] = useState('week');
-
-  const allDays = Object.keys(history).sort();
-  const totalDays = allDays.filter(k => (history[k].tasks||[]).filter(Boolean).length >= TASKS.length).length;
-  const totalXP = Object.values(history).reduce((s, d) => s + (d.xp || 0), 0);
+  const totalDays = Object.keys(history).filter(k => (history[k].tasks||[]).filter(Boolean).length >= TASKS.length).length;
+  const totalXP = Object.values(history).reduce((s,d) => s+(d.xp||0), 0);
   const level = getLevel(totalXP);
   const streak = calcStreak(history);
   const longest = calcLongestStreak(history);
-
-  // Chart data
-  const chartDays = period === 'week' ? 7 : period === 'month' ? 30 : period === 'year' ? 52 : null;
-  const heatmapDays = period === 'week' ? 7 : period === 'month' ? 30 : period === 'year' ? 365 : allDays.length || 7;
+  const heatDays = period==='week' ? 7 : period==='month' ? 30 : period==='year' ? 365 : Math.max(Object.keys(history).length, 7);
+  const chartN = period==='week' ? 7 : period==='month' ? 30 : period==='year' ? 52 : null;
 
   function getChartData() {
-    if (!chartDays) return [];
-    const result = [];
-    for (let i = chartDays - 1; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - (period === 'year' ? i * 7 : i));
+    if (!chartN) return [];
+    return Array.from({length: chartN}, (_,i) => {
+      const d = new Date(); d.setDate(d.getDate() - (period==='year' ? (chartN-1-i)*7 : (chartN-1-i)));
       const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      const day = history[key];
-      const pct = day ? ((day.tasks||[]).filter(Boolean).length / TASKS.length) * 100 : 0;
-      const label = period === 'week'
-        ? ['S','M','T','W','T','F','S'][d.getDay()]
-        : period === 'year' ? `W${chartDays - i}` : `${d.getDate()}`;
-      result.push({ pct, label });
-    }
-    return result;
+      const pct = ((history[key]?.tasks||[]).filter(Boolean).length / TASKS.length)*100;
+      const label = period==='week' ? ['S','M','T','W','T','F','S'][d.getDay()] : period==='year' ? `W${i+1}` : `${d.getDate()}`;
+      return {pct, label};
+    });
   }
 
-  const chartData = getChartData();
-
-  const unlocked = ACHIEVEMENTS.filter(a => longest >= a.threshold || (a.threshold === 1 && totalDays >= 1));
-
   return (
-    <div className="stats-page">
+    <div style={{padding:'16px 0'}}>
       <div className="stats-grid">
-        <div className="stat-card" style={{ animationDelay: '0s' }}>
-          <div className="stat-icon">🔥</div>
-          <div className="stat-value">{streak}</div>
-          <div className="stat-label">Current Streak</div>
-        </div>
-        <div className="stat-card" style={{ animationDelay: '0.1s' }}>
-          <div className="stat-icon">🏆</div>
-          <div className="stat-value">{longest}</div>
-          <div className="stat-label">Best Streak</div>
-        </div>
-        <div className="stat-card" style={{ animationDelay: '0.2s' }}>
-          <div className="stat-icon">⚡</div>
-          <div className="stat-value">{totalXP}</div>
-          <div className="stat-label">Total XP</div>
-        </div>
-        <div className="stat-card" style={{ animationDelay: '0.3s' }}>
-          <div className="stat-icon">🌟</div>
-          <div className="stat-value">{totalDays}</div>
-          <div className="stat-label">Perfect Days</div>
-        </div>
-      </div>
-
-      <div className="level-badge" style={{ display: 'flex', marginBottom: 16 }}>
-        <span>Level:</span> <span>{level.name}</span>
-        <span style={{ color: 'rgba(245,158,11,0.5)' }}>· {totalXP} XP</span>
-      </div>
-
-      <div className="period-tabs">
-        {[['week','7 Days'], ['month','30 Days'], ['year','This Year'], ['lifetime','Lifetime']].map(([v, label]) => (
-          <button key={v} className={`period-tab${period === v ? ' active' : ''}`} onClick={() => setPeriod(v)}>
-            {label}
-          </button>
+        {[['🔥','Current Streak',streak],['🏆','Best Streak',longest],['⚡','Total XP',totalXP],['🌟','Perfect Days',totalDays]].map(([icon,label,val],i) => (
+          <div key={i} className="stat-card" style={{animationDelay:`${i*0.1}s`}}>
+            <div className="stat-icon">{icon}</div>
+            <div className="stat-value">{val}</div>
+            <div className="stat-label">{label}</div>
+          </div>
         ))}
       </div>
-
-      {/* Activity heatmap */}
+      <div className="level-badge" style={{display:'flex',marginBottom:16}}>
+        <span>Level:</span><span>{level.name}</span><span style={{color:'rgba(245,158,11,0.5)'}}>· {totalXP} XP</span>
+      </div>
+      <div className="period-tabs">
+        {[['week','7 Days'],['month','30 Days'],['year','This Year'],['lifetime','Lifetime']].map(([v,l]) => (
+          <button key={v} className={`period-tab${period===v?' active':''}`} onClick={()=>setPeriod(v)}>{l}</button>
+        ))}
+      </div>
       <div className="heatmap-section">
         <div className="heatmap-title">Activity Heatmap</div>
-        <div className="heatmap-subtitle">
-          {period === 'week' ? 'Last 7 days' : period === 'month' ? 'Last 30 days' : period === 'year' ? 'Last 365 days' : 'All time'}
-        </div>
-        {Object.keys(history).length === 0
+        <div className="heatmap-subtitle">{period==='week'?'Last 7 days':period==='month'?'Last 30 days':period==='year'?'Last 365 days':'All time'}</div>
+        {Object.keys(history).length===0
           ? <div className="empty-state"><div className="icon">📭</div><p>No data yet — check off your first tasks!</p></div>
-          : <Heatmap history={history} days={Math.min(heatmapDays, 365)} />
-        }
+          : <Heatmap history={history} days={Math.min(heatDays,365)} />}
       </div>
-
-      {/* Chart */}
-      {chartData.length > 0 && (
+      {chartN && (
         <div className="heatmap-section">
           <div className="heatmap-title">Completion Rate</div>
           <div className="chart-bars">
-            {chartData.map((d, i) => (
+            {getChartData().map((d,i) => (
               <div key={i} className="chart-bar-wrap">
-                <div className="chart-bar" style={{ height: `${Math.max(4, d.pct * 0.8)}px` }} />
+                <div className="chart-bar" style={{height:`${Math.max(4,d.pct*0.8)}px`}} />
                 <div className="chart-bar-label">{d.label}</div>
               </div>
             ))}
           </div>
         </div>
       )}
-
-      {/* Achievements */}
       <div className="achievements-section">
-        <div className="heatmap-title" style={{ marginBottom: 12 }}>Achievements</div>
+        <div className="heatmap-title" style={{marginBottom:12}}>Achievements</div>
         <div className="achievement-list">
           {ACHIEVEMENTS.map(a => {
-            const earned = longest >= a.threshold || (a.threshold === 1 && totalDays >= 1);
+            const earned = longest >= a.threshold || (a.threshold===1 && totalDays>=1);
             return (
-              <div key={a.id} className={`achievement-item${earned ? '' : ' locked'}`}>
+              <div key={a.id} className={`achievement-item${earned?'':' locked'}`}>
                 <div className="ach-icon">{a.icon}</div>
                 <div className="ach-info">
                   <div className="ach-name">{a.name}</div>
                   <div className="ach-desc">{a.desc}</div>
                 </div>
-                {earned
-                  ? <div className="ach-badge">EARNED</div>
-                  : <div style={{ fontSize: 11, color: '#6666aa' }}>{a.threshold - longest} to go</div>
-                }
+                {earned ? <div className="ach-badge">EARNED</div>
+                        : <div style={{fontSize:11,color:'#6666aa'}}>{a.threshold-longest} to go</div>}
               </div>
             );
           })}
@@ -1153,20 +970,15 @@ function StatsPage({ history }) {
   );
 }
 
-// ─── Today Page ────────────────────────────────────────────────────────────────
-
 function TodayPage({ history, onToggle, showCompletion, onDismissCompletion }) {
   const today = todayKey();
-  const day = history[today] || { tasks: [] };
-  const tasks = day.tasks || [];
+  const tasks = history[today]?.tasks || [];
   const completed = tasks.filter(Boolean).length;
   const pct = (completed / TASKS.length) * 100;
-  const totalXP = Object.values(history).reduce((s, d) => s + (d.xp || 0), 0);
+  const totalXP = Object.values(history).reduce((s,d) => s+(d.xp||0), 0);
   const level = getLevel(totalXP);
+  const todayXP = tasks.reduce((s,v,i) => s+(v?TASKS[i].xp:0), 0);
   const msg = MOTIVATIONAL[new Date().getDay() % MOTIVATIONAL.length];
-
-  // Group by time
-  const groups = ['Morning', 'Afternoon', 'Evening'];
 
   return (
     <div>
@@ -1176,51 +988,71 @@ function TodayPage({ history, onToggle, showCompletion, onDismissCompletion }) {
           <div className="completion-screen">
             <div className="completion-emoji">🏆</div>
             <div className="completion-title">PERFECT DAY!</div>
-            <div className="completion-sub">
-              You crushed all 10 tasks!{'\n'}
-              Your streak is growing stronger 🔥{'\n'}
-              {totalXP} XP earned so far.
-            </div>
-            <button className="completion-btn" onClick={onDismissCompletion}>
-              Keep it up! →
-            </button>
+            <div className="completion-sub">You crushed all 10 tasks!{'\n'}Keep that streak alive 🔥{'\n'}{totalXP} XP earned total.</div>
+            <button className="completion-btn" onClick={onDismissCompletion}>Keep it up! →</button>
           </div>
         </>
       )}
-
       <div className="progress-section">
         <ProgressRing pct={pct} />
         <div className="progress-info">
-          <div className="progress-title">{completed === 0 ? "Let's go!" : completed < 5 ? "Good start!" : completed < 10 ? "Almost there!" : "Perfect day!"}</div>
-          <div className="progress-subtitle">{completed}/{TASKS.length} tasks · {tasks.filter(Boolean).reduce((s, _, i) => s + (tasks[i] ? TASKS[i].xp : 0), 0)} XP earned today</div>
+          <div className="progress-title">{completed===0?"Let's go!":completed<5?"Good start!":completed<10?"Almost there!":"Perfect day!"}</div>
+          <div className="progress-subtitle">{completed}/{TASKS.length} tasks · {todayXP} XP today</div>
           <div className="motivational-msg">{msg}</div>
-          <div className="level-badge" style={{ marginTop: 6, display: 'inline-flex' }}>⚡ {level.name}</div>
+          <div className="level-badge" style={{marginTop:6,display:'inline-flex'}}>⚡ {level.name}</div>
         </div>
       </div>
-
-      <div className="daily-progress-bar" style={{ margin: '0 16px 12px' }}>
-        <div className="daily-progress-fill" style={{ width: `${pct}%` }} />
+      <div className="daily-progress-bar" style={{margin:'0 16px 12px'}}>
+        <div className="daily-progress-fill" style={{width:`${pct}%`}} />
       </div>
-
       <div className="main">
-        {groups.map(group => {
-          const groupTasks = TASKS.filter(t => t.time === group);
-          return (
-            <div key={group}>
-              <div className="section-label">{group}</div>
-              {groupTasks.map((t, i) => (
-                <TaskCard
-                  key={t.id}
-                  task={t}
-                  done={!!tasks[t.id]}
-                  onToggle={onToggle}
-                  delay={i + (group === 'Morning' ? 0 : group === 'Afternoon' ? 4 : 7)}
-                />
-              ))}
-            </div>
-          );
-        })}
+        {['Morning','Afternoon','Evening'].map(group => (
+          <div key={group}>
+            <div className="section-label">{group}</div>
+            {TASKS.filter(t=>t.time===group).map((t,i) => (
+              <TaskCard key={t.id} task={t} done={!!tasks[t.id]} onToggle={onToggle}
+                delay={i+(group==='Morning'?0:group==='Afternoon'?4:7)} />
+            ))}
+          </div>
+        ))}
       </div>
+    </div>
+  );
+}
+
+// ─── Login Screen ─────────────────────────────────────────────────────────────
+
+function LoginScreen({ onLogin }) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleGoogle() {
+    setLoading(true);
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      await auth.signInWithPopup(provider);
+    } catch (e) {
+      alert('Sign-in failed: ' + e.message);
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="login-screen">
+      <div className="login-logo">🔥</div>
+      <div className="login-title">Day in a Life</div>
+      <div className="login-sub">Your daily ritual tracker — synced across all your devices.</div>
+      <ul className="login-features">
+        <li><span>☀️</span><span>10 daily goals across morning, afternoon & evening</span></li>
+        <li><span>🔥</span><span>Streak system with XP & levels</span></li>
+        <li><span>📊</span><span>Heatmaps, charts & achievements</span></li>
+        <li><span>📸</span><span>Share your progress to Instagram</span></li>
+        <li><span>☁️</span><span>Synced across all your devices</span></li>
+      </ul>
+      <button className="google-btn" onClick={handleGoogle} disabled={loading}>
+        {loading ? <div className="loading-spinner" style={{width:20,height:20,borderWidth:2}} /> : <span className="google-icon">G</span>}
+        {loading ? 'Signing in…' : 'Continue with Google'}
+      </button>
+      <p className="login-note">Your data is private and only accessible to you.</p>
     </div>
   );
 }
@@ -1228,15 +1060,48 @@ function TodayPage({ history, onToggle, showCompletion, onDismissCompletion }) {
 // ─── Root App ──────────────────────────────────────────────────────────────────
 
 function App() {
+  const [user, setUser] = useState(undefined);   // undefined = loading, null = logged out
+  const [history, setHistory] = useState({});
+  const [syncState, setSyncState] = useState('synced'); // 'synced' | 'syncing' | 'error'
   const [tab, setTab] = useState('today');
-  const [history, setHistory] = useState(() => loadData());
   const [toast, setToast] = useState(null);
   const [showCompletion, setShowCompletion] = useState(false);
   const toastTimer = useRef(null);
+  const saveTimer = useRef(null);
 
-  const today = todayKey();
-  const streak = calcStreak(history);
-  const longest = calcLongestStreak(history);
+  // Auth listener
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged(async u => {
+      setUser(u || null);
+      if (u) {
+        setSyncState('syncing');
+        try {
+          const data = await loadFromFirestore(u.uid);
+          setHistory(data);
+          setSyncState('synced');
+        } catch (e) {
+          console.error(e);
+          setSyncState('error');
+        }
+      }
+    });
+    return unsub;
+  }, []);
+
+  // Debounced Firestore save
+  function scheduleSave(uid, newHistory) {
+    setSyncState('syncing');
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await saveToFirestore(uid, newHistory);
+        setSyncState('synced');
+      } catch (e) {
+        console.error(e);
+        setSyncState('error');
+      }
+    }, 800);
+  }
 
   function showToast(msg) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -1245,40 +1110,71 @@ function App() {
   }
 
   function handleToggle(taskId) {
+    const today = todayKey();
     setHistory(prev => {
       const day = prev[today] || { tasks: Array(TASKS.length).fill(false), xp: 0 };
       const tasks = [...(day.tasks || Array(TASKS.length).fill(false))];
       while (tasks.length < TASKS.length) tasks.push(false);
-      const wasCompleted = tasks.filter(Boolean).length === TASKS.length;
+      const wasFull = tasks.filter(Boolean).length === TASKS.length;
       tasks[taskId] = !tasks[taskId];
-      const nowCompleted = tasks.filter(Boolean).length;
-      const fullDay = nowCompleted === TASKS.length;
-      const xp = tasks.reduce((s, v, i) => s + (v ? TASKS[i].xp : 0), 0) + (fullDay ? 50 : 0);
-
-      if (tasks[taskId]) {
-        showToast(`+${TASKS[taskId].xp} XP — ${TASKS[taskId].name} done! 🎉`);
-      }
-      if (!wasCompleted && fullDay) {
-        setTimeout(() => setShowCompletion(true), 400);
-      }
-
+      const nowDone = tasks.filter(Boolean).length;
+      const fullDay = nowDone === TASKS.length;
+      const xp = tasks.reduce((s,v,i) => s+(v?TASKS[i].xp:0), 0) + (fullDay ? 50 : 0);
+      if (tasks[taskId]) showToast(`+${TASKS[taskId].xp} XP — ${TASKS[taskId].name} done! 🎉`);
+      if (!wasFull && fullDay) setTimeout(() => setShowCompletion(true), 400);
       const updated = { ...prev, [today]: { ...day, tasks, xp } };
-      saveData(updated);
+      scheduleSave(user.uid, updated);
       return updated;
     });
   }
 
-  const tabs = [
-    { id: 'today', icon: '☀️', label: 'Today' },
-    { id: 'stats', icon: '📊', label: 'Stats' },
-    { id: 'share', icon: '📸', label: 'Share' },
-  ];
+  async function handleLogout() {
+    await auth.signOut();
+    setHistory({});
+    setUser(null);
+  }
+
+  const streak = calcStreak(history);
+  const longest = calcLongestStreak(history);
+  const totalXP = Object.values(history).reduce((s,d) => s+(d.xp||0), 0);
+
+  // Loading
+  if (user === undefined) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner" />
+        <div className="loading-text">Loading…</div>
+      </div>
+    );
+  }
+
+  // Not logged in
+  if (!user) return <LoginScreen />;
+
+  const syncLabel = syncState==='syncing' ? 'Syncing…' : syncState==='error' ? 'Sync error' : 'Synced';
 
   return (
     <div className="app">
       {toast && <div className="reward-toast">{toast}</div>}
 
       <div className="header">
+        {/* User row */}
+        <div className="user-row">
+          <div className="user-info">
+            {user.photoURL
+              ? <img className="user-avatar" src={user.photoURL} alt="" />
+              : <div className="user-avatar-fallback">{(user.displayName||'U')[0]}</div>}
+            <div>
+              <div className="user-name">{user.displayName?.split(' ')[0] || 'Hey!'}</div>
+              <div className="sync-indicator">
+                <div className={`sync-dot${syncState==='syncing'?' syncing':syncState==='error'?' error':''}`} />
+                <span className="sync-text">{syncLabel}</span>
+              </div>
+            </div>
+          </div>
+          <button className="logout-btn" onClick={handleLogout}>Sign out</button>
+        </div>
+
         {/* Streak Banner */}
         <div className="streak-banner">
           <div className="streak-left">
@@ -1290,38 +1186,24 @@ function App() {
           </div>
           <div className="streak-right">
             <div className="streak-best">Best: <span>{longest}</span> days</div>
-            <div className="xp-badge">⚡ {Object.values(history).reduce((s, d) => s + (d.xp || 0), 0)} XP</div>
-            <div style={{ fontSize: 11, color: '#6666aa', marginTop: 4 }}>{formatDate(today)}</div>
+            <div className="xp-badge">⚡ {totalXP} XP</div>
+            <div style={{fontSize:11,color:'#6666aa',marginTop:4}}>{formatDate(todayKey())}</div>
           </div>
         </div>
       </div>
 
-      {/* Page content */}
-      {tab === 'today' && (
-        <TodayPage
-          history={history}
-          onToggle={handleToggle}
-          showCompletion={showCompletion}
-          onDismissCompletion={() => setShowCompletion(false)}
-        />
+      {tab==='today' && (
+        <TodayPage history={history} onToggle={handleToggle}
+          showCompletion={showCompletion} onDismissCompletion={() => setShowCompletion(false)} />
       )}
-      {tab === 'stats' && (
-        <div style={{ padding: '0 16px 90px' }}>
-          <StatsPage history={history} />
-        </div>
-      )}
-      {tab === 'share' && (
-        <div style={{ padding: '0 16px 90px' }}>
-          <SharePage history={history} streak={streak} />
-        </div>
-      )}
+      {tab==='stats' && <div style={{padding:'0 16px 90px'}}><StatsPage history={history} /></div>}
+      {tab==='share' && <div style={{padding:'0 16px 90px'}}><SharePage history={history} streak={streak} user={user} /></div>}
 
-      {/* Bottom Nav */}
       <div className="bottom-nav">
-        {tabs.map(t => (
-          <button key={t.id} className={`nav-item${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>
-            <span className="nav-icon">{t.icon}</span>
-            <span className="nav-label">{t.label}</span>
+        {[['today','☀️','Today'],['stats','📊','Stats'],['share','📸','Share']].map(([id,icon,label]) => (
+          <button key={id} className={`nav-item${tab===id?' active':''}`} onClick={() => setTab(id)}>
+            <span className="nav-icon">{icon}</span>
+            <span className="nav-label">{label}</span>
           </button>
         ))}
       </div>
