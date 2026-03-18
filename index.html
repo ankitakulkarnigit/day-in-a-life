@@ -1036,7 +1036,7 @@ function LoginScreen({ onLogin }) {
     setLoading(true);
     try {
       const provider = new firebase.auth.GoogleAuthProvider();
-      await auth.signInWithRedirect(provider);
+      await auth.signInWithPopup(provider);
     } catch (e) {
       alert('Sign-in failed: ' + e.message);
       setLoading(false);
@@ -1078,8 +1078,16 @@ function App() {
 
   // Auth listener + handle redirect result
   useEffect(() => {
-    auth.getRedirectResult().catch(e => console.error('Redirect error:', e));
+    let resolved = false;
+
+    auth.getRedirectResult().then(result => {
+      // redirect result handled — onAuthStateChanged will fire next
+    }).catch(e => {
+      console.error('Redirect error:', e);
+    });
+
     const unsub = auth.onAuthStateChanged(async u => {
+      if (!resolved) resolved = true;
       setUser(u || null);
       if (u) {
         setSyncState('syncing');
