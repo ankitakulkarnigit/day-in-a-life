@@ -63,7 +63,7 @@ https://ankitakulkarnigit.github.io/day-in-a-life/
 1. 🥑 Fat First Morning
 2. 🥚 Protein Rich Breakfast
 3. 👟 2K Steps
-4. 📚 Interview Prep
+4. 📚 Learning
 5. 🥗 Protein & Fiber Lunch
 6. 🚶 3K Steps
 7. 🍎 Mindful Snack / Pre-workout
