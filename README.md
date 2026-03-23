@@ -69,7 +69,7 @@ https://ankitakulkarnigit.github.io/day-in-a-life/
 7. 🍎 Mindful Snack / Pre-workout
 8. 💪 Gym / 8K Steps
 9. 🌙 Low Carb Dinner
-10. 🧠 Evening Interview Prep
+10. 🧠 Reading/Learning
 
 ## Features
 - 🔥 Streak tracking with XP & level system
