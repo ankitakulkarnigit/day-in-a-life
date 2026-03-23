@@ -55,6 +55,10 @@ Then open **http://localhost:8080** in your browser.
 
 > ⚠️ Do not open `index.html` directly as a file — Firebase Auth requires `http://` to work.
 
+### 3. App hosted at
+
+https://ankitakulkarnigit.github.io/day-in-a-life/
+
 ## Daily Goals
 1. 🥑 Fat First Morning
 2. 🥚 Protein Rich Breakfast
